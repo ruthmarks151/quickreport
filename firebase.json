@@ -10,12 +10,13 @@
     ]
   },
   "hosting": {
-    "public": "public",
+    "public": "frontend/public",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ]
+    ],
+    "predeploy": "npm --prefix \"frontend\" run build"
   },
   "storage": {
     "rules": "storage.rules"

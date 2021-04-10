@@ -81,6 +81,23 @@ export const report = functions.runWith({ memory: "2GB", timeoutSeconds: 60 }).h
     await page.setDefaultNavigationTimeout(0)
     await page.setViewport({ width: 1440, height: 1440 })
 
+    let userData
+    try {
+      userData = await db
+        .collection("users")
+        .doc(token.uid)
+        .get()
+        .then((doc) => doc.data() as { [key: string]: string })
+    } catch (e) {
+      res.status(401).send("Not authorized")
+      return
+    }
+
+    if (!userData) {
+      res.status(401).send("Not authorized")
+      return
+    }
+
     const {
       title = "",
       firstName = "",
@@ -90,11 +107,8 @@ export const report = functions.runWith({ memory: "2GB", timeoutSeconds: 60 }).h
       phone = "",
       phoneType = "Home",
       serviceRequestDetails = "",
-    } = await db
-      .collection("users")
-      .doc(token.uid)
-      .get()
-      .then((doc) => doc.data() as { [key: string]: string })
+    } = userData
+
     const formsets: { [key: string]: Action[] } = {
       overflowingTrashBin: [
         [LOAD_URL, "https://secure.toronto.ca/webwizard/html/litter_bin_overflow.htm"],
@@ -108,7 +122,7 @@ export const report = functions.runWith({ memory: "2GB", timeoutSeconds: 60 }).h
         [ENTER_TEXT, "form #probCrossStreet2", req.query.crossStreet2 as string],
         [ENTER_TEXT, "form #probLocationDetails", req.query.locationDetails as string],
 
-        [ENTER_TEXT, "form #ctctTitle", title],
+        [SELECT, "form #ctctTitle", title],
         [ENTER_TEXT, "form #ctctFirstName", firstName],
         [ENTER_TEXT, "form #ctctLastName", lastName],
         [ENTER_TEXT, "form #ctctEmail", email],
@@ -135,29 +149,6 @@ export const report = functions.runWith({ memory: "2GB", timeoutSeconds: 60 }).h
     if (!pageActions) {
       res.status(400).send("Please specify a valid Report Type")
     }
-    /*
-
-  await page.waitForSelector('#layout > #content > form > .buttons > .next')
-  await page.click('#layout > #content > form > .buttons > .next')
-
-  await navigationPromise
-
-  await page.waitForSelector('form #additional_information')
-  await page.click('form #additional_information')
-
-  await page.waitForSelector('#layout > #content > form > .buttons > .next')
-  await page.click('#layout > #content > form > .buttons > .next')
-
-  await navigationPromise
-
-  await page.waitForSelector('#layout > #content > form > .buttons > .back')
-  await page.click('#layout > #content > form > .buttons > .back')
-
-  await navigationPromise
-
-  await browser.close()
-})()
-       */
 
     const screenshots: string[] = []
     for (const pageAction of pageActions) {
@@ -260,7 +251,9 @@ export const report = functions.runWith({ memory: "2GB", timeoutSeconds: 60 }).h
         <head></head>
             <body>
                 <p>Run in ${(new Date().getTime() - startAt) / 1000} Seconds</p>
-                ${screenshots.map((ssData1) => `<img src="data:image/jpeg;base64, ${ssData1}"/>`).join("\n")}
+                ${screenshots
+                  .map((screenshotData) => `<img src="data:image/jpeg;base64, ${screenshotData}"/>`)
+                  .join("\n")}
             </body>
       </html>
       `)
