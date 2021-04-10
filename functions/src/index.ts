@@ -143,6 +143,10 @@ export const report = functions.runWith({ memory: "2GB", timeoutSeconds: 60 }).h
         [NEXT_PAGE, "#layout > #content > form > .buttons > .next"],
         [SCREENSHOT],
       ],
+      treeProblem: [
+        [LOAD_URL, "https://google.com"],
+        [SCREENSHOT],
+      ]
     }
     const pageActions = formsets[req.query.reportType as string]
 
